@@ -25,7 +25,7 @@ from svg_gestos import generar_svg_acorde
 # Configuración de página
 # ---------------------------------------------------------------------------
 st.set_page_config(
-    page_title="Director Armónico Gestual",
+    page_title="Método Gestual Improway",
     page_icon="🎼",
     layout="wide",
 )
@@ -134,7 +134,7 @@ def mostrar_tarjeta_acorde(resultado: dict, col=None):
 # UI Principal
 # ---------------------------------------------------------------------------
 
-st.title("🎼 Director Armónico Gestual")
+st.title("🎼 Método Gestual Improway")
 st.markdown("Visualiza los gestos manuales del **Método de Dirección Armónica**.")
 
 tab1, tab2 = st.tabs(["Acorde individual", "Secuencia de acordes"])
@@ -273,3 +273,5 @@ with tab2:
 
         if usar_tonalidad and tonica_seq:
             st.info(f"Tonalidad: {tonica_seq} {escala_seq}")
+
+st.markdown('<div style="text-align:center;color:#888;margin-top:2em;font-size:0.8em;">Recuerda que no está prohibido estudiar</div>', unsafe_allow_html=True)

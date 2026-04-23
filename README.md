@@ -1,6 +1,8 @@
-# Director Armónico Gestual
+# Método Gestual Improway
 
-Aplicación para codificar y visualizar los gestos manuales del **Método de Dirección Armónica Gestual**: un sistema de señas con las manos que permite a un director de orquesta comunicar acordes, tipos armónicos e inversiones en tiempo real.
+Aplicación para codificar y visualizar los gestos manuales del 
+**Método de Dirección Armónica Gestual**:
+un sistema de señas con las manos que permite a un director de orquesta comunicar acordes, tipos armónicos e inversiones en tiempo real.
 
 MVP en Python/Streamlit, diseñado desde el inicio para ser portable a Flutter/Dart (Android, iOS, Web).
 

@@ -148,47 +148,130 @@ def _dibujar_cuerpo(brazo_der_levantado=False):
 # Dibujo de una mano
 # ---------------------------------------------------------------------------
 
-def _dibujar_dedos(cx, cy, num_dedos, color, orientacion_abajo=False, es_pulgar_solo=False, es_pulgar_indice=False):
+def _dedo_seg(x1, y1, x2, y2, color, grosor=5):
+    """Trazo de un dedo con extremos redondeados."""
+    return (f'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" '
+            f'stroke="{color}" stroke-width="{grosor}" stroke-linecap="round"/>')
+
+
+def _dibujar_dedos(cx, cy, num_dedos, color, orientacion_abajo=False,
+                   es_pulgar_solo=False, es_pulgar_indice=False,
+                   pulgar_derecha=False, descripcion=""):
     """
-    Dibuja dedos estilizados como líneas que salen de la palma.
-    orientacion_abajo: True = dedos apuntan abajo, False = arriba.
+    Dibuja una mano anatómica:
+      - Palma oval (elipse)
+      - Dedos del mismo color que la palma, con longitudes naturales
+      - Pulgar en el lateral, más corto y en ángulo
+    pulgar_derecha=True → el pulgar aparece a la DERECHA en pantalla (mano izq. del director).
     """
     partes = []
-    # Palma — radio mayor para mano abierta (5 dedos) para que los extremos no se confundan con el borde
-    radio_palma = 18 if num_dedos == 5 else 14
-    partes.append(_circle(cx, cy, radio_palma, color))
 
-    largo = 22
-    dy = largo if orientacion_abajo else -largo
+    rx_p, ry_p = 12, 14    # semiejes de la palma
+    grosor = 5              # grosor de los dedos
+    sign = 1 if orientacion_abajo else -1   # +1 = dedos hacia abajo, -1 = hacia arriba
+
+    # Palma ovalada
+    partes.append(f'<ellipse cx="{cx}" cy="{cy}" rx="{rx_p}" ry="{ry_p}" fill="{color}"/>')
+
+    # ── Pulgar ──────────────────────────────────────────────────────────
+    # Sale del lateral de la palma, más corto e inclinado hacia afuera.
+    lado = 1 if pulgar_derecha else -1
+    p_bx = cx + lado * rx_p           # base en el lateral de la palma
+    p_by = cy + sign * 3              # ligeramente en la dirección de los dedos
+    p_tx = p_bx + lado * 10           # punta lateral
+    p_ty = p_by + sign * 9            # punta en la dirección de los dedos
+
+    # ── Dedos principales (índice, medio, anular, meñique) ──────────────
+    # Si pulgar a la derecha: de izq. a der. → meñique, anular, medio, índice
+    # Si pulgar a la izquierda: de izq. a der. → índice, medio, anular, meñique
+    # Cada tupla: (desplazamiento_x, longitud)
+    if pulgar_derecha:
+        layout_4 = [(-11, 19), (-4, 23), (3, 25), (10, 22)]  # meñ, anu, med, ind
+        I_IND, I_MED, I_ANU, I_MEN = 3, 2, 1, 0
+    else:
+        layout_4 = [(-10, 22), (-3, 25), (4, 23), (11, 19)]  # ind, med, anu, meñ
+        I_IND, I_MED, I_ANU, I_MEN = 0, 1, 2, 3
+
+    # Los dedos arrancan bastante dentro del borde de la palma para que no quede hueco visual
+    base_y = cy + sign * (ry_p - 7)
+
+    def _dedo(idx):
+        ox, largo = layout_4[idx]
+        return _dedo_seg(cx + ox, base_y, cx + ox, base_y + sign * largo, color, grosor)
+
+    def _pulgar():
+        return _dedo_seg(p_bx, p_by, p_tx, p_ty, color, grosor)
+
+    def _pulgar_vertical():
+        """
+        Pulgar vertical tipo "OK/KO": la mano rota y el pulgar apunta claramente
+        hacia arriba o hacia abajo.
+        """
+        base_x = cx + lado * 6
+        base_y_p = cy - sign * 5
+        tip_x = base_x + lado * 1
+        tip_y = base_y_p + sign * 22
+        return _dedo_seg(base_x, base_y_p, tip_x, tip_y, color, grosor)
+
+    def _dedo_horizontal(base_y_h, largo=22):
+        """Dedo horizontal que apunta al lado opuesto del pulgar."""
+        dir_h = -lado
+        base_x = cx + dir_h * 1
+        tip_x = base_x + dir_h * largo
+        return _dedo_seg(base_x, base_y_h, tip_x, base_y_h, color, grosor)
+
+    # ── Seleccionar qué dedos dibujar según el gesto ────────────────────
+    tiene_pulgar_trio = num_dedos == 3 and "Pulgar" in descripcion
 
     if es_pulgar_solo:
-        # Solo pulgar: apunta a los lados
-        partes.append(_line(cx, cy, cx - 18, cy - 8, "white", 3))
-        return "\n".join(partes)
+        # La → mano rotada con pulgar vertical (OK/KO)
+        partes.append(_pulgar_vertical())
 
-    if es_pulgar_indice:
-        # Pulgar (lateral) + índice
-        partes.append(_line(cx, cy, cx - 16, cy - 10, "white", 3))
-        partes.append(_line(cx, cy, cx + 6, cy + dy, "white", 3))
-        return "\n".join(partes)
+    elif es_pulgar_indice:
+        # Si → igual que La pero añadiendo índice horizontal tipo pistola
+        partes.append(_pulgar_vertical())
+        partes.append(_dedo_horizontal(cy + sign * 4, 23))
 
-    # Dedos normales (1 a 5): separados horizontalmente
-    offsets = {
-        1: [0],
-        2: [-7, 7],
-        3: [-10, 0, 10],
-        4: [-12, -4, 4, 12],
-        5: [-13, -6, 0, 6, 13],
-    }
-    xs = offsets.get(num_dedos, [0])
-    for ox in xs:
-        partes.append(_line(cx + ox, cy, cx + ox, cy + dy, "white", 3))
+    elif tiene_pulgar_trio:
+        # Mi → igual que Si, añadiendo también el dedo corazón paralelo al índice
+        partes.append(_pulgar_vertical())
+        partes.append(_dedo_horizontal(cy + sign * 4, 23))
+        partes.append(_dedo_horizontal(cy + sign * 10, 21))
+
+    elif num_dedos == 1:
+        # Do → solo índice
+        partes.append(_dedo(I_IND))
+
+    elif num_dedos == 2:
+        # Re → victoria (índice + medio, con mayor separación para formar la V)
+        ox_i, l_i = layout_4[I_IND]
+        ox_m, l_m = layout_4[I_MED]
+        # Separar 2 px extra hacia afuera desde el centro
+        sep = 2 * lado
+        partes.append(_dedo_seg(cx + ox_i + sep, base_y,
+                                cx + ox_i + sep, base_y + sign * l_i, color, grosor))
+        partes.append(_dedo_seg(cx + ox_m - sep, base_y,
+                                cx + ox_m - sep, base_y + sign * l_m, color, grosor))
+
+    elif num_dedos == 4:
+        # Fa → índice, medio, anular, meñique (sin pulgar)
+        for i in range(4):
+            partes.append(_dedo(i))
+
+    else:
+        # Sol → mano abierta (5 dedos)
+        partes.append(_pulgar())
+        for i in range(4):
+            partes.append(_dedo(i))
+
     return "\n".join(partes)
 
 
-def _dibujar_mano(cx, cy, info_dedos, orientacion_arriba, color, agitacion=False, etiqueta=""):
+def _dibujar_mano(cx, cy, info_dedos, orientacion_arriba, color, agitacion=False,
+                  etiqueta="", pulgar_derecha=False):
     """
     Dibuja la mano completa con flecha de orientación y, opcionalmente, zigzag de agitación.
+    pulgar_derecha: orientación anatómica del pulgar (True = derecha de pantalla).
     """
     partes = []
 
@@ -203,10 +286,13 @@ def _dibujar_mano(cx, cy, info_dedos, orientacion_arriba, color, agitacion=False
         orientacion_abajo=not orientacion_arriba,
         es_pulgar_solo=es_pulgar_solo,
         es_pulgar_indice=es_pulgar_indice,
+        pulgar_derecha=pulgar_derecha,
+        descripcion=desc,
     ))
 
-    # Flecha de orientación (más grande, encima/debajo de la mano)
-    offset_flecha = 28
+    # Flecha de orientación — alejada de la mano para no solaparse con los dedos
+    # El dedo más largo mide 25px desde base_y=(ry_p-7)=7px → punta a ~32px del centro
+    offset_flecha = 50
     if orientacion_arriba:
         partes.append(_flecha_arriba(cx, cy - offset_flecha, color, 12))
     else:
@@ -278,6 +364,7 @@ def generar_svg_acorde(resultado: dict, ancho: int = 320, alto: int = 480) -> st
     elements.append(_dibujar_cuerpo(brazo_der_levantado=(altura_der == "Cabeza")))
 
     # Mano IZQUIERDA (bajo) — siempre a altura de pecho
+    # Director de frente: su mano izquierda está a la DERECHA de pantalla → pulgar a la derecha
     elements.append(_dibujar_mano(
         cx=X_MANO_IZQ,
         cy=Y_MANO_PECHO,
@@ -286,9 +373,11 @@ def generar_svg_acorde(resultado: dict, ancho: int = 320, alto: int = 480) -> st
         color=COLOR_MANO_IZQ,
         agitacion=False,
         etiqueta=nota_izq,
+        pulgar_derecha=True,
     ))
 
     # Mano DERECHA (armonía) — altura variable
+    # Director de frente: su mano derecha está a la IZQUIERDA de pantalla → pulgar a la izquierda
     elements.append(_dibujar_mano(
         cx=X_MANO_DER,
         cy=y_mano_der,
@@ -297,6 +386,7 @@ def generar_svg_acorde(resultado: dict, ancho: int = 320, alto: int = 480) -> st
         color=COLOR_MANO_DER,
         agitacion=agitacion_der,
         etiqueta=der.get("nota", nota_izq),
+        pulgar_derecha=False,
     ))
 
     # Leyenda inferior
@@ -310,6 +400,7 @@ def generar_svg_acorde(resultado: dict, ancho: int = 320, alto: int = 480) -> st
     if agitacion_der:
         elements.append(_rect(155, y_leyenda, 155, 20, "#FADBD8", 6))
         elements.append(_text(163, y_leyenda + 13, "↔ Agitación = bemol", 10, COLOR_BEMOL, "start"))
+
 
     svg = f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {ancho} {alto}" width="{ancho}" height="{alto}">
 {chr(10).join(elements)}
