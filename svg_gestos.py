@@ -378,6 +378,10 @@ def generar_svg_acorde(resultado: dict, ancho: int = 320, alto: int = 480) -> st
 
     # Mano DERECHA (armonía) — altura variable
     # Director de frente: su mano derecha está a la IZQUIERDA de pantalla → pulgar a la izquierda
+    # Determinar si la mano derecha debe ir espejada (pulgar_derecha=True)
+    tipo_triada_der = der.get("tipo_triada_derecha", "mayor")
+    # Espejar para menor o disminuido
+    pulgar_derecha_der = tipo_triada_der in ("menor", "disminuido")
     elements.append(_dibujar_mano(
         cx=X_MANO_DER,
         cy=y_mano_der,
@@ -386,7 +390,7 @@ def generar_svg_acorde(resultado: dict, ancho: int = 320, alto: int = 480) -> st
         color=COLOR_MANO_DER,
         agitacion=agitacion_der,
         etiqueta=der.get("nota", nota_izq),
-        pulgar_derecha=False,
+        pulgar_derecha=pulgar_derecha_der,
     ))
 
     # Leyenda inferior
