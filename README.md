@@ -44,6 +44,10 @@ Cada acorde se comunica con **dos manos simultáneas**:
 | Solo pulgar | La |
 | Pulgar + índice | Si |
 
+> **Nota anatómica:** En los acordes menores y disminuidos, la mano derecha nunca se muestra con la palma hacia afuera ni con los dedos apuntando hacia el exterior del cuerpo, ya que esto sería un movimiento antinatural. En estos casos, la mano derecha se representa igual que la izquierda pero rotada 180°, con la palma hacia el cuerpo y los dedos junto al cuerpo.
+>
+> Para los gestos de La, Mi y Si, el pulgar se coloca hacia arriba y el dedo índice (si está presente) se representa en posición horizontal, simulando la postura natural de la mano en estos casos.
+
 ### Reglas de orientación y altura
 
 **Mano izquierda (bajo):**

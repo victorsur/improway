@@ -28,6 +28,9 @@ Ambas manos usan **exactamente la misma configuración de dedos** (ver sección 
 * **Hacia Arriba (↑):** Acorde Mayor (en pecho) o Aumentado (en cabeza).
 * **Hacia Abajo (↓):** Acorde Menor (en pecho) o Disminuido (en cabeza).
 * **Agitación Lateral (↔):** La nota que muestra la mano derecha es bemol. Se combina con cualquier orientación ↑ o ↓.
+
+> **Nota anatómica:** En los acordes menores y disminuidos, la mano derecha nunca se muestra con la palma hacia afuera ni con los dedos apuntando hacia el exterior del cuerpo, ya que esto sería un movimiento antinatural. En estos casos, la mano derecha se representa igual que la izquierda pero rotada 180°, con la palma hacia el cuerpo y los dedos junto al cuerpo.
+
 * Ejemplos:
     * 2 dedos ↑ en pecho = **Re Mayor**
     * 2 dedos ↑ en pecho + agitación ↔ = **Reb Mayor**
@@ -77,6 +80,8 @@ Ejemplos verificados:
 | 5 dedos (Mano completa) | Mano abierta | Sol |
 | 1 dedo (Pulgar) | Solo pulgar | La |
 | 2 dedos (Pulgar + Índice) | Pulgar e índice | Si |
+
+> **Detalle anatómico:** Para los gestos de La, Mi y Si, el pulgar se coloca hacia arriba y el dedo índice (si está presente) se representa en posición horizontal, simulando la postura natural de la mano en estos casos.
 
 ## 4. Tabla de Correspondencia Rápida
 | Posición | Orientación | Significado Armónico |
