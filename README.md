@@ -18,7 +18,7 @@ MVP en Python/Streamlit, diseñado desde el inicio para ser portable a Flutter/D
 ├── logica_metodo.md    # Documentación completa del método gestual
 └── tests/
     ├── test_motor_armonico.py  # 196 tests de lógica armónica
-    └── test_svg_gestos.py      #  59 tests del generador SVG
+    └── test_svg_gestos.py      #  70 tests del generador SVG
 ```
 
 ---
@@ -136,7 +136,7 @@ La app abre en `http://localhost:8501` y tiene dos pestañas:
 ## Ejecutar los tests
 
 ```bash
-# Todos los tests (255 en total)
+# Todos los tests (266 en total)
 .venv/bin/python3 -m pytest tests/ -v
 
 # Solo lógica armónica
@@ -152,7 +152,7 @@ La app abre en `http://localhost:8501` y tiene dos pestañas:
 Resultado esperado:
 
 ```
-255 passed in ~1s
+266 passed in ~1s
 ```
 
 ### Qué cubre la suite
@@ -168,7 +168,7 @@ Resultado esperado:
 - Casos de error: entradas inválidas + tipos no gesturales (sus4/sus2/6/m6)
 - Tests de regresión para los casos documentados en `logica_metodo.md`
 
-**`test_svg_gestos.py`** (59 tests):
+**`test_svg_gestos.py`** (70 tests):
 - SVG bien formado y con dimensiones correctas
 - XML válido (parseado con `xml.etree.ElementTree`)
 - Nombres de acorde y notas presentes en el SVG
