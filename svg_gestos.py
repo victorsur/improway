@@ -154,6 +154,25 @@ def _dedo_seg(x1, y1, x2, y2, color, grosor=5):
             f'stroke="{color}" stroke-width="{grosor}" stroke-linecap="round"/>')
 
 
+def _pulgar_derecha_mano_derecha(nota_gesto, tipo_triada):
+    """
+    Decide en qué lateral debe caer el pulgar de la mano derecha del director.
+
+    Regla anatómica:
+      - En los gestos de Mi y Si, ambas manos deben "enfrentarse": los dedos
+        horizontales de la mano derecha apuntan siempre hacia el centro del
+        cuerpo (o hacia la cabeza si la mano está arriba). Por tanto, en
+        pantalla el pulgar queda a la IZQUIERDA.
+      - En el resto de gestos, menor/disminuido se representan espejados para
+        mantener la palma hacia el cuerpo.
+
+    Devuelve True si el pulgar debe quedar a la derecha de la pantalla.
+    """
+    if nota_gesto in ("Mi", "Si"):
+        return False
+    return tipo_triada in ("menor", "disminuido")
+
+
 def _dibujar_dedos(cx, cy, num_dedos, color, orientacion_abajo=False,
                    es_pulgar_solo=False, es_pulgar_indice=False,
                    pulgar_derecha=False, descripcion=""):
@@ -246,7 +265,6 @@ def _dibujar_dedos(cx, cy, num_dedos, color, orientacion_abajo=False,
         # Re → victoria (índice + medio, con mayor separación para formar la V)
         ox_i, l_i = layout_4[I_IND]
         ox_m, l_m = layout_4[I_MED]
-        # Separar 2 px extra hacia afuera desde el centro
         sep = 2 * lado
         partes.append(_dedo_seg(cx + ox_i + sep, base_y,
                                 cx + ox_i + sep, base_y + sign * l_i, color, grosor))
@@ -377,11 +395,11 @@ def generar_svg_acorde(resultado: dict, ancho: int = 320, alto: int = 480) -> st
     ))
 
     # Mano DERECHA (armonía) — altura variable
-    # Director de frente: su mano derecha está a la IZQUIERDA de pantalla → pulgar a la izquierda
-    # Determinar si la mano derecha debe ir espejada (pulgar_derecha=True)
+    # Director de frente: su mano derecha está a la IZQUIERDA de pantalla.
+    # En Mi/Si los dedos horizontales deben apuntar siempre hacia el cuerpo;
+    # menor/disminuido solo cambian el eje vertical (arriba/abajo).
     tipo_triada_der = der.get("tipo_triada_derecha", "mayor")
-    # Espejar para menor o disminuido
-    pulgar_derecha_der = tipo_triada_der in ("menor", "disminuido")
+    pulgar_derecha_der = _pulgar_derecha_mano_derecha(nota_gesto_der, tipo_triada_der)
     elements.append(_dibujar_mano(
         cx=X_MANO_DER,
         cy=y_mano_der,

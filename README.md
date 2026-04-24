@@ -47,6 +47,8 @@ Cada acorde se comunica con **dos manos simultáneas**:
 > **Nota anatómica:** En los acordes menores y disminuidos, la mano derecha nunca se muestra con la palma hacia afuera ni con los dedos apuntando hacia el exterior del cuerpo, ya que esto sería un movimiento antinatural. En estos casos, la mano derecha se representa igual que la izquierda pero rotada 180°, con la palma hacia el cuerpo y los dedos junto al cuerpo.
 >
 > Para los gestos de La, Mi y Si, el pulgar se coloca hacia arriba y el dedo índice (si está presente) se representa en posición horizontal, simulando la postura natural de la mano en estos casos.
+>
+> **Convención visual importante para Mi y Si en la mano derecha:** cuando la armonía usa gesto de **Mi** o **Si**, ambas manos deben verse como si se apuntaran entre sí. En pantalla, los dedos horizontales de la mano derecha apuntan siempre **hacia el centro del cuerpo** del director; si el acorde va sobre la cabeza (disminuido), siguen apuntando hacia la cabeza/cuerpo. En acordes menores y disminuidos la mano derecha se pone boca abajo, pero no deja de apuntar hacia dentro.
 
 ### Reglas de orientación y altura
 
@@ -172,6 +174,7 @@ Resultado esperado:
 - Nombres de acorde y notas presentes en el SVG
 - Orientación correcta de manos (director de frente al espectador)
 - Altura Pecho/Cabeza según tipo de acorde
+- Regresión anatómica de `Mi` y `Si` en mano derecha (dedos apuntando hacia el cuerpo/cabeza)
 - Agitación lateral (zigzag rojo) solo cuando hay bemol
 - Robustez: los 10 tipos gesturales + todos los bemoles + todas las notas naturales
 - Verificación de que sus4/sus2/6/m6 generan SVG de error sin excepción

@@ -321,6 +321,13 @@ def determinar_gesto_mano_derecha(tipo_acorde, es_bemol_nota_der, notas=None):
       Do maj7 (Do-Mi-Sol-Si)  → tríada der: Mi-Sol-Si  = menor     → Pecho  ↓
       Sol 7   (Sol-Si-Re-Fa)  → tríada der: Si-Re-Fa   = disminuido → Cabeza ↓
       Re m7   (Re-Fa-La-Do)   → tríada der: Fa-La-Do   = mayor     → Pecho  ↑
+
+    Nota de representación SVG:
+      - La orientación aquí solo fija altura (pecho/cabeza) y vector vertical (↑/↓).
+      - El render anatómico de la mano derecha se resuelve en svg_gestos.py.
+      - En particular, cuando la nota natural gestual de la mano derecha es Mi o Si,
+        el dibujo debe mantener los dedos horizontales apuntando hacia el cuerpo
+        del director; en menor/disminuido solo cambia el eje vertical.
     """
     # Tabla de gestos por tipo de tríada
     GESTOS_TRIADA = {
@@ -601,6 +608,9 @@ def analizar_acorde_gestual(nombre_acorde, inversion=None, observacion_manual=No
             "altura": gesto_der["altura"],
             "orientacion": gesto_der["orientacion"],
             "agitacion_lateral": gesto_der["agitacion_lateral"],
+            # Para el renderer SVG: permite decidir la postura anatómica de la
+            # mano derecha. En Mi/Si el espejo horizontal se mantiene apuntando
+            # hacia el cuerpo; menor/disminuido solo invierten arriba/abajo.
             "tipo_triada_derecha": gesto_der["tipo_triada_derecha"],
         },
         "inversion": resultado_inversion,

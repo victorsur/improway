@@ -49,6 +49,12 @@ def parse_svg(svg_str):
     return ET.fromstring(svg_str)
 
 
+def assert_segmento(svg_str, x1, y1, x2, y2):
+    """Comprueba que el SVG contiene un segmento exacto."""
+    snippet = f'x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}"'
+    assert snippet in svg_str, f"No se encontró el segmento esperado: {snippet}"
+
+
 # ---------------------------------------------------------------------------
 # 1. Estructura básica del SVG
 # ---------------------------------------------------------------------------
@@ -224,6 +230,31 @@ class TestCaraDirector:
         for nombre in ["Do Mayor", "Sol aumentado", "Fa disminuido", "Re m7"]:
             svg, _ = svg_de(nombre)
             assert "<path" in svg, f"Falta <path> (boca) en '{nombre}'"
+
+
+# ---------------------------------------------------------------------------
+# 4c. Anatomía de Mi/Si en mano derecha (dedos hacia el cuerpo)
+# ---------------------------------------------------------------------------
+
+class TestAnatomiaManoDerechaMiSi:
+    @pytest.mark.parametrize("nombre,y_dedo", [
+        ("Si Mayor", 206),
+        ("Si menor", 214),
+        ("Si disminuido", 24),
+    ])
+    def test_si_mano_derecha_apunta_hacia_el_centro(self, nombre, y_dedo):
+        svg, _ = svg_de(nombre)
+        assert_segmento(svg, 56, y_dedo, 79, y_dedo)
+
+    @pytest.mark.parametrize("nombre,y_indice,y_corazon", [
+        ("Mi Mayor", 206, 200),
+        ("Mi menor", 214, 220),
+        ("Mi disminuido", 24, 30),
+    ])
+    def test_mi_mano_derecha_apunta_hacia_el_centro(self, nombre, y_indice, y_corazon):
+        svg, _ = svg_de(nombre)
+        assert_segmento(svg, 56, y_indice, 79, y_indice)
+        assert_segmento(svg, 56, y_corazon, 77, y_corazon)
 
 
 # ---------------------------------------------------------------------------

@@ -30,6 +30,8 @@ Ambas manos usan **exactamente la misma configuración de dedos** (ver sección 
 * **Agitación Lateral (↔):** La nota que muestra la mano derecha es bemol. Se combina con cualquier orientación ↑ o ↓.
 
 > **Nota anatómica:** En los acordes menores y disminuidos, la mano derecha nunca se muestra con la palma hacia afuera ni con los dedos apuntando hacia el exterior del cuerpo, ya que esto sería un movimiento antinatural. En estos casos, la mano derecha se representa igual que la izquierda pero rotada 180°, con la palma hacia el cuerpo y los dedos junto al cuerpo.
+>
+> **Regla visual específica para Mi y Si en la mano derecha:** cuando la armonía se representa con gesto de **Mi** (pulgar + índice + medio) o **Si** (pulgar + índice), la mano derecha se dibuja siempre como si ambas manos se "enfrentaran". En pantalla, los dedos horizontales apuntan siempre **hacia el centro del cuerpo del director**; si la mano está sobre la cabeza (acorde disminuido o tríada superior disminuida), siguen apuntando hacia la cabeza/cuerpo. En los acordes menores y disminuidos **solo cambia el eje vertical** (la mano se pone boca abajo), pero **no** el lateral: el pulgar queda en el lado exterior y los dedos hacia el interior.
 
 * Ejemplos:
     * 2 dedos ↑ en pecho = **Re Mayor**
@@ -82,6 +84,8 @@ Ejemplos verificados:
 | 2 dedos (Pulgar + Índice) | Pulgar e índice | Si |
 
 > **Detalle anatómico:** Para los gestos de La, Mi y Si, el pulgar se coloca hacia arriba y el dedo índice (si está presente) se representa en posición horizontal, simulando la postura natural de la mano en estos casos.
+>
+> En la **mano derecha**, los gestos de **Mi** y **Si** conservan siempre ese apuntamiento horizontal hacia el centro del cuerpo. Por eso, en acordes como **Mi Mayor / Mi menor / Mi disminuido** y **Si Mayor / Si menor / Si disminuido**, así como en extendidos donde la mano derecha muestra **Mi** o **Si** (por ejemplo `Do 7` o `Sol 7`), la imagen debe verse como el reflejo especular de la postura antinatural hacia afuera.
 
 ## 4. Tabla de Correspondencia Rápida
 | Posición | Orientación | Significado Armónico |
