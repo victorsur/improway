@@ -637,6 +637,7 @@ class TestNotacionEscritura:
         ("↓1", "1", "Do disminuido con bajo en Do"),
         ("+5", "1", "Do mayor con novena mayor con bajo en Do"),
         ("-5", "1", "Do dominante novena con bajo en Do"),
+        ("↑5", "1", "Do mayor con séptima mayor y novena aumentada con bajo en Do"),
         ("-7", "1", "Do oncena con bajo en Do"),
     ])
     def test_nombre_completo_resuelto(self, sup, bajo, nombre_esperado):

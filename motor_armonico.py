@@ -254,11 +254,15 @@ def _resolver_nombre_base_escritura(nota_superior, tipo_triada, nota_bajo):
         return f"{_nota_larga(nota_bajo)} mayor con novena mayor"
     if distancia == 7 and tipo_triada == "menor":
         return f"{_nota_larga(nota_bajo)} dominante novena"
+    if distancia == 7 and tipo_triada == "aumentado":
+        # Ej: ↑5/1 = bajo Do + Sol aumentado (Sol-Si-Mib).
+        # Se interpreta funcionalmente como 5-7-#9 sobre la tónica.
+        return f"{_nota_larga(nota_bajo)} mayor con séptima mayor y novena aumentada"
     if distancia == 11 and tipo_triada == "menor":
         return f"{_nota_larga(nota_bajo)} oncena"
 
-    # Fallback descriptivo si no coincide con una fórmula canónica del documento.
-    return f"{_nota_larga(nota_superior)} {tipo_triada}"
+    # Fallback estructural para evitar etiquetar como acorde simple algo que no lo es.
+    return f"Estructura: bajo en {_nota_larga(nota_bajo)} + {_nota_larga(nota_superior)} {tipo_triada}"
 
 
 def analizar_notacion_escritura(parte_superior, parte_bajo):
