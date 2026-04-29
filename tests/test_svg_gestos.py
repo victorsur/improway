@@ -19,7 +19,7 @@ import xml.etree.ElementTree as ET
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from motor_armonico import analizar_acorde_gestual
+from motor_armonico import analizar_acorde_gestual, analizar_notacion_escritura
 from svg_gestos import (
     generar_svg_acorde,
     X_MANO_DER,
@@ -346,3 +346,13 @@ class TestRobustez:
             parse_svg(svg)
         except ET.ParseError as e:
             pytest.fail(f"SVG para '{nombre}' no es XML válido: {e}")
+
+
+class TestNotacionEscrituraSVG:
+    def test_oncena_desde_notacion_escritura_genera_svg(self):
+        r = analizar_notacion_escritura("-7", "1")
+        assert r["error"] is False
+        svg = generar_svg_acorde(r["resultado_gestual"])
+        assert "<svg" in svg
+        parse_svg(svg)
+

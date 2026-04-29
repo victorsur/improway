@@ -39,6 +39,8 @@ from motor_armonico import (
     validar_inversion,
     parsear_nombre_acorde,
     analizar_acorde_gestual,
+    parsear_notacion_escritura,
+    analizar_notacion_escritura,
 )
 
 
@@ -603,3 +605,51 @@ class TestRegresion:
         assert r["mano_derecha"]["tipo_triada_derecha"] == "menor"
         assert r["mano_derecha"]["altura"] == "Pecho"
         assert r["mano_derecha"]["orientacion"] == "Abajo (↓)"
+
+
+# ---------------------------------------------------------------------------
+# 13. Notación de escritura (dos campos)
+# ---------------------------------------------------------------------------
+
+class TestNotacionEscritura:
+    def test_parseo_superior_y_bajo_validos(self):
+        r = parsear_notacion_escritura("+3b", "2b")
+        assert r["error"] is False
+        assert r["nota_superior"] == "Mib"
+        assert r["nota_bajo"] == "Reb"
+        assert r["tipo_triada"] == "mayor"
+
+    def test_parseo_error_formato_superior(self):
+        r = parsear_notacion_escritura("3", "1")
+        assert r["error"] is True
+
+    def test_parseo_error_bemol_no_gestural(self):
+        r = parsear_notacion_escritura("+1b", "1")
+        assert r["error"] is True
+
+    @pytest.mark.parametrize("sup,bajo,nombre_esperado", [
+        ("+1", "1", "Do mayor con bajo en Do"),
+        ("-2", "2", "Re menor con bajo en Re"),
+        ("+3b", "3b", "Mi bemol mayor con bajo en Mi bemol"),
+        ("-2b", "2b", "Re bemol menor con bajo en Re bemol"),
+        ("-3", "1", "Do mayor con séptima mayor con bajo en Do"),
+        ("↑1", "1", "Do aumentado con bajo en Do"),
+        ("↓1", "1", "Do disminuido con bajo en Do"),
+        ("+5", "1", "Do mayor con novena mayor con bajo en Do"),
+        ("-5", "1", "Do dominante novena con bajo en Do"),
+        ("-7", "1", "Do oncena con bajo en Do"),
+    ])
+    def test_nombre_completo_resuelto(self, sup, bajo, nombre_esperado):
+        r = analizar_notacion_escritura(sup, bajo)
+        assert r["error"] is False
+        assert r["acorde"]["nombre_completo"] == nombre_esperado
+
+    def test_resultado_gestual_compatible_svg(self):
+        r = analizar_notacion_escritura("-7", "1")
+        assert r["error"] is False
+        gest = r["resultado_gestual"]
+        assert gest["error"] is False
+        assert gest["mano_izquierda"]["nota"] == "Do"
+        assert gest["mano_derecha"]["nota"] == "Si"
+        assert gest["mano_derecha"]["tipo_triada_derecha"] == "menor"
+

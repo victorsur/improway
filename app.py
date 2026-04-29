@@ -14,6 +14,7 @@ import random
 
 from motor_armonico import (
     analizar_acorde_gestual,
+    analizar_notacion_escritura,
     TIPOS_ACORDE,
     NOTA_A_INDICE,
     INDICE_A_NOTA_LATINA,
@@ -98,24 +99,7 @@ def mostrar_tarjeta_acorde(resultado: dict, col=None):
         unsafe_allow_html=True,
     )
 
-    with target.expander("Ver detalles del gesto"):
-        target.markdown(f"**Notas:** {' — '.join(notas['latinas'])}")
-        target.markdown(f"**Anglosajona:** {' — '.join(notas['anglosajonas'])}")
-        target.markdown("---")
-        target.markdown("**Mano izquierda (bajo)**")
-        target.markdown(f"- Nota: **{izq['nota']}**")
-        target.markdown(f"- Gesto: {izq['gesto_dedos']}")
-        target.markdown(f"- Orientación: {izq['orientacion']}")
-        target.markdown("**Mano derecha (armonía)**")
-        target.markdown(f"- Nota: **{der['nota']}**")
-        target.markdown(f"- Gesto: {der['gesto_dedos']}")
-        target.markdown(f"- Altura: {der['altura']}")
-        target.markdown(f"- Orientación: {der['orientacion']}")
-        target.markdown(f"- Tríada inferida: {der['tipo_triada_derecha']}")
-        if der["agitacion_lateral"].startswith("Sí"):
-            target.markdown(f"- ↔ Agitación lateral activa (la nota {der['nota']} es bemol)")
-        target.markdown("---")
-        target.markdown(f"**Observación:** {obs['mostrar']}")
+    mostrar_detalles_gesto(resultado, target)
 
     # Inversiones posibles
     inv_posibles = resultado["inversiones_posibles"]
@@ -130,6 +114,35 @@ def mostrar_tarjeta_acorde(resultado: dict, col=None):
         target.table(filas)
 
 
+def mostrar_detalles_gesto(resultado: dict, target=None):
+    """Muestra el bloque "Ver detalles del gesto" para cualquier resultado gestual."""
+    ui = target if target else st
+
+    notas = resultado["notas"]
+    izq = resultado["mano_izquierda"]
+    der = resultado["mano_derecha"]
+    obs = resultado["observaciones"]
+
+    with ui.expander("Ver detalles del gesto"):
+        ui.markdown(f"**Notas:** {' — '.join(notas['latinas'])}")
+        ui.markdown(f"**Anglosajona:** {' — '.join(notas['anglosajonas'])}")
+        ui.markdown("---")
+        ui.markdown("**Mano izquierda (bajo)**")
+        ui.markdown(f"- Nota: **{izq['nota']}**")
+        ui.markdown(f"- Gesto: {izq['gesto_dedos']}")
+        ui.markdown(f"- Orientación: {izq['orientacion']}")
+        ui.markdown("**Mano derecha (armonía)**")
+        ui.markdown(f"- Nota: **{der['nota']}**")
+        ui.markdown(f"- Gesto: {der['gesto_dedos']}")
+        ui.markdown(f"- Altura: {der['altura']}")
+        ui.markdown(f"- Orientación: {der['orientacion']}")
+        ui.markdown(f"- Tríada inferida: {der['tipo_triada_derecha']}")
+        if der["agitacion_lateral"].startswith("Sí"):
+            ui.markdown(f"- ↔ Agitación lateral activa (la nota {der['nota']} es bemol)")
+        ui.markdown("---")
+        ui.markdown(f"**Observación:** {obs['mostrar']}")
+
+
 # ---------------------------------------------------------------------------
 # UI Principal
 # ---------------------------------------------------------------------------
@@ -137,7 +150,7 @@ def mostrar_tarjeta_acorde(resultado: dict, col=None):
 st.title("🎼 Método Gestual Improway")
 st.markdown("Visualiza los gestos manuales del **Método de Dirección Armónica**.")
 
-tab1, tab2 = st.tabs(["Acorde individual", "Secuencia de acordes"])
+tab1, tab2, tab3 = st.tabs(["Acorde individual", "Secuencia de acordes", "Escritura de acordes"])
 
 # ===========================================================================
 # TAB 1: Acorde individual
@@ -273,5 +286,72 @@ with tab2:
 
         if usar_tonalidad and tonica_seq:
             st.info(f"Tonalidad: {tonica_seq} {escala_seq}")
+
+# ===========================================================================
+# TAB 3: Escritura de acordes
+# ===========================================================================
+with tab3:
+    st.subheader("Escritura de acordes")
+    st.caption("Selecciona el tipo de acorde y escribe grado superior + bajo en campos separados.")
+
+    c_sup, c_bajo = st.columns(2)
+    with c_sup:
+        c_signo, c_grado = st.columns([1, 3])
+        with c_signo:
+            simbolo_sup = st.selectbox(
+                "Tipo",
+                ["+", "-", "↑", "↓"],
+                index=0,
+                key="esc_tipo_sup",
+                help=" + mayor, - menor, ↑ aumentado, ↓ disminuido",
+            )
+            st.caption("'+' mayor, '-' menor, '↑' aumentado, '↓' disminuido")
+        with c_grado:
+            grado_sup = st.text_input(
+                "Parte superior (grado: 1..7 y b opcional)",
+                value="1",
+                key="esc_grado_sup",
+                placeholder="Ej: 1, 3, 3b, 7",
+            )
+
+        superior_txt = f"{simbolo_sup}{(grado_sup or '').strip().lower()}"
+    with c_bajo:
+        bajo_txt = st.text_input(
+            "Bajo (ej: 1, 2, 3b)",
+            value="1",
+            key="esc_bajo",
+        )
+
+    if st.button("Mostrar escritura", type="primary", key="btn_esc"):
+        resultado = analizar_notacion_escritura(superior_txt, bajo_txt)
+        if resultado.get("error"):
+            st.error(resultado["mensaje"])
+        else:
+            notacion = resultado["notacion"]
+            acorde = resultado["acorde"]
+
+            st.markdown("### Notacion")
+            st.markdown(
+                (
+                    '<div style="max-width:220px;margin:0 auto 1rem auto;text-align:center;">'
+                    f'<div style="font-size:2rem;font-weight:700;line-height:1.1;">{notacion["superior"]}</div>'
+                    '<div style="border-top:2px solid #2C3E50;margin:0.35rem 0 0.45rem 0;"></div>'
+                    f'<div style="font-size:2rem;font-weight:700;line-height:1.1;">{notacion["bajo"]}</div>'
+                    '</div>'
+                ),
+                unsafe_allow_html=True,
+            )
+
+            st.markdown(f"**{acorde['nombre_completo']}**")
+
+            svg = generar_svg_acorde(resultado["resultado_gestual"])
+            import base64
+            svg_b64 = base64.b64encode(svg.encode("utf-8")).decode("utf-8")
+            st.markdown(
+                f'<img src="data:image/svg+xml;base64,{svg_b64}" style="width:100%;max-width:320px;display:block;margin:auto"/>',
+                unsafe_allow_html=True,
+            )
+
+            mostrar_detalles_gesto(resultado["resultado_gestual"])
 
 st.markdown('<div style="text-align:center;color:#888;margin-top:2em;font-size:0.8em;">Recuerda que no está prohibido estudiar</div>', unsafe_allow_html=True)

@@ -7,6 +7,8 @@ notación latina/anglosajona y observaciones didácticas.
 Diseñado para ser portable a Flutter/Dart en el futuro.
 """
 
+import re
+
 # ---------------------------------------------------------------------------
 # 1. DATOS BASE
 # ---------------------------------------------------------------------------
@@ -80,8 +82,8 @@ DEDOS_MAP = {
 # Ej: Reb -> gesto de Re (2 dedos Victoria) + dedos hacia abajo (mano izq)
 #                                            + agitación lateral (mano der)
 # IMPORTANTE: Dob y Fab NO están aquí porque en este método no existen:
-#   - Dob se expresa directamente como Si (misma tecla, mismo gesto)
-#   - Fab se expresa directamente como Mi (misma tecla, mismo gesto)
+#   - Dob se expresa directamente como Si (misma tecla, se expresa directamente como Si)
+#   - Fab se expresa directamente como Mi (misma tecla, se expresa directamente como Mi)
 BEMOL_A_NATURAL = {
     "Reb": "Re", "Mib": "Mi", "Solb": "Sol", "Lab": "La", "Sib": "Si",
 }
@@ -104,6 +106,255 @@ OBSERVACIONES_AUTO = {
     "9": "Acorde de novena: extiende la dominante con color adicional. Gestualmente: bajo en la fundamental, mano derecha muestra la tríada de la 5ª (5ª-7ª-9ª).",
     "m9": "Acorde menor novena: sonoridad rica y moderna. Gestualmente: bajo en la fundamental, mano derecha muestra la tríada menor de la 5ª (5ª-7ª-9ª).",
 }
+
+# ---------------------------------------------------------------------------
+# Lógica de notación de escritura (+1/1, -3/1, ↑1/1, etc.)
+# ---------------------------------------------------------------------------
+
+GRADO_A_NOTA_NATURAL = {
+    "1": "Do",
+    "2": "Re",
+    "3": "Mi",
+    "4": "Fa",
+    "5": "Sol",
+    "6": "La",
+    "7": "Si",
+}
+
+GRADO_A_NOTA_BEMOL = {
+    "2": "Reb",
+    "3": "Mib",
+    "5": "Solb",
+    "6": "Lab",
+    "7": "Sib",
+}
+
+SIMBOLO_A_TIPO_TRIADA = {
+    "+": "mayor",
+    "-": "menor",
+    "↑": "aumentado",
+    "↓": "disminuido",
+}
+
+
+def _nota_larga(nota):
+    """Convierte nota latina a nombre largo en castellano (Reb -> Re bemol)."""
+    if nota.endswith("b") and len(nota) > 1:
+        base = nota[:-1]
+        # Tildes para notas
+        if base == "Mi":
+            return "Mi bemol"
+        if base == "Si":
+            return "Si bemol"
+        if base == "La":
+            return "La bemol"
+        if base == "Sol":
+            return "Sol bemol"
+        if base == "Re":
+            return "Re bemol"
+        return f"{base} bemol"
+    # Tildes para notas naturales
+    if nota == "Mi":
+        return "Mi"
+    if nota == "Si":
+        return "Si"
+    if nota == "La":
+        return "La"
+    if nota == "Sol":
+        return "Sol"
+    if nota == "Re":
+        return "Re"
+    return nota
+
+
+def _parsear_grado(token):
+    """Parsea un grado 1-7 con bemol opcional y devuelve la nota latina."""
+    m = re.fullmatch(r"([1-7])(b?)", token.strip())
+    if not m:
+        return None, "Formato de grado invalido. Usa 1..7 y b opcional (ej: 3b)."
+
+    grado, bemol = m.group(1), m.group(2)
+    if not bemol:
+        return GRADO_A_NOTA_NATURAL[grado], None
+
+    if grado not in GRADO_A_NOTA_BEMOL:
+        return None, (
+            "Ese bemol no es gestural en este metodo. "
+            "Bemoles validos: 2b, 3b, 5b, 6b, 7b."
+        )
+    return GRADO_A_NOTA_BEMOL[grado], None
+
+
+def parsear_notacion_escritura(parte_superior, parte_bajo):
+    """
+    Parsea la notacion en dos campos:
+      - parte_superior: +1, -3b, ↑5, ↓7...
+      - parte_bajo: 1, 2b, 5...
+    """
+    sup = (parte_superior or "").strip()
+    bajo = (parte_bajo or "").strip()
+
+    if not sup or not bajo:
+        return {"error": True, "mensaje": "Debes completar los dos campos de escritura."}
+
+    m_sup = re.fullmatch(r"([+\-↑↓])([1-7]b?)", sup)
+    if not m_sup:
+        return {
+            "error": True,
+            "mensaje": "Campo superior invalido. Formato esperado: +1, -3b, ↑5 o ↓7.",
+        }
+
+    simbolo = m_sup.group(1)
+    grado_sup = m_sup.group(2)
+
+    nota_sup, err_sup = _parsear_grado(grado_sup)
+    if err_sup:
+        return {"error": True, "mensaje": f"Error en la parte superior: {err_sup}"}
+
+    nota_bajo, err_bajo = _parsear_grado(bajo)
+    if err_bajo:
+        return {"error": True, "mensaje": f"Error en el bajo: {err_bajo}"}
+
+    tipo_triada = SIMBOLO_A_TIPO_TRIADA[simbolo]
+    return {
+        "error": False,
+        "simbolo": simbolo,
+        "tipo_triada": tipo_triada,
+        "superior": sup,
+        "bajo": bajo,
+        "nota_superior": nota_sup,
+        "nota_bajo": nota_bajo,
+    }
+
+
+def _resolver_nombre_base_escritura(nota_superior, tipo_triada, nota_bajo):
+    """Resuelve el nombre armónico principal a partir de bajo + triada superior."""
+    idx_sup = NOTA_A_INDICE[nota_superior]
+    idx_bajo = NOTA_A_INDICE[nota_bajo]
+    distancia = (idx_sup - idx_bajo) % 12
+
+    # Triadas directas / inversiones: se nombra por la triada escrita arriba.
+    if distancia == 0:
+        if tipo_triada == "mayor":
+            return f"{_nota_larga(nota_superior)} mayor"
+        if tipo_triada == "menor":
+            return f"{_nota_larga(nota_superior)} menor"
+        if tipo_triada == "aumentado":
+            return f"{_nota_larga(nota_superior)} aumentado"
+        return f"{_nota_larga(nota_superior)} disminuido"
+
+    # Casos compuestos documentados en el método.
+    if distancia == 4 and tipo_triada == "menor":
+        return f"{_nota_larga(nota_bajo)} mayor con séptima mayor"
+    if distancia == 3 and tipo_triada == "mayor":
+        return f"{_nota_larga(nota_bajo)} menor con séptima menor"
+    if distancia == 4 and tipo_triada == "disminuido":
+        return f"{_nota_larga(nota_bajo)} con séptima dominante"
+    if distancia == 7 and tipo_triada == "mayor":
+        return f"{_nota_larga(nota_bajo)} mayor con novena mayor"
+    if distancia == 7 and tipo_triada == "menor":
+        return f"{_nota_larga(nota_bajo)} dominante novena"
+    if distancia == 11 and tipo_triada == "menor":
+        return f"{_nota_larga(nota_bajo)} oncena"
+
+    # Fallback descriptivo si no coincide con una fórmula canónica del documento.
+    return f"{_nota_larga(nota_superior)} {tipo_triada}"
+
+
+def analizar_notacion_escritura(parte_superior, parte_bajo):
+    """
+    Analiza la notacion de escritura de acordes en dos campos y devuelve:
+      - Notacion normalizada (superior / bajo)
+      - Nombre armonico completo
+      - Resultado gestual compatible con generar_svg_acorde()
+    """
+    parsed = parsear_notacion_escritura(parte_superior, parte_bajo)
+    if parsed.get("error"):
+        return parsed
+
+    simbolo = parsed["simbolo"]
+    tipo_triada = parsed["tipo_triada"]
+    nota_sup = parsed["nota_superior"]
+    nota_bajo = parsed["nota_bajo"]
+
+    notas_triada = obtener_notas_acorde(nota_sup, tipo_triada)
+    if notas_triada is None:
+        return {"error": True, "mensaje": "No se pudo construir la triada de la parte superior."}
+
+    nombre_base = _resolver_nombre_base_escritura(nota_sup, tipo_triada, nota_bajo)
+    nombre_completo = f"{nombre_base} con bajo en {_nota_larga(nota_bajo)}"
+
+    gesto_izq = determinar_gesto_mano_izquierda(nota_bajo)
+
+    es_bemol_der = nota_es_bemol(nota_sup)
+    nota_gesto_der = nota_base_para_gesto(nota_sup) or nota_sup
+    info_dedos_der = DEDOS_MAP.get(nota_gesto_der, {"descripcion": "Desconocido"})
+    gesto_der = determinar_gesto_mano_derecha(tipo_triada, es_bemol_der, notas_triada)
+
+    resultado_gestual = {
+        "error": False,
+        "acorde": {
+            "entrada_original": f"{parsed['superior']}/{parsed['bajo']}",
+            "nombre_latino": nombre_base,
+            "nombre_anglosajona": "",
+            "fundamental": nota_bajo,
+            "tipo": tipo_triada,
+        },
+        "notas": {
+            "latinas": [nota_bajo] + notas_triada,
+            "anglosajonas": [nota_a_anglosajona(nota_bajo)] + [nota_a_anglosajona(n) for n in notas_triada],
+            "num_notas": 1 + len(notas_triada),
+        },
+        "mano_izquierda": {
+            "funcion": "Bajo / Nota inferior",
+            "nota": gesto_izq["nota"],
+            "gesto_dedos": gesto_izq["gesto"],
+            "orientacion": gesto_izq["orientacion"],
+            "nota_natural_gesto": gesto_izq["nota_natural_del_gesto"],
+            "es_bemol": nota_es_bemol(nota_bajo),
+        },
+        "mano_derecha": {
+            "funcion": "Armonia / Parte superior",
+            "nota": nota_sup,
+            "nota_natural_gesto": nota_gesto_der,
+            "es_bemol": es_bemol_der,
+            "gesto_dedos": info_dedos_der["descripcion"],
+            "altura": gesto_der["altura"],
+            "orientacion": gesto_der["orientacion"],
+            "agitacion_lateral": gesto_der["agitacion_lateral"],
+            "tipo_triada_derecha": tipo_triada,
+        },
+        "inversion": None,
+        "inversiones_posibles": {},
+        "observaciones": {
+            "automatica": "Notación de escritura: bajo + tríada superior.",
+            "manual": None,
+            "mostrar": "Notación de escritura: bajo + tríada superior.",
+        },
+    }
+
+    return {
+        "error": False,
+        "notacion": {
+            "superior": parsed["superior"],
+            "bajo": parsed["bajo"],
+            "compacta": f"{parsed['superior']}/{parsed['bajo']}",
+        },
+        "acorde": {
+            "nombre_base": nombre_base,
+            "nombre_completo": nombre_completo,
+            "nota_superior": nota_sup,
+            "tipo_triada_superior": tipo_triada,
+            "nota_bajo": nota_bajo,
+            "simbolo_superior": simbolo,
+        },
+        "notas": {
+            "bajo": nota_bajo,
+            "triada_superior": notas_triada,
+            "sonido_total": [nota_bajo] + notas_triada,
+        },
+        "resultado_gestual": resultado_gestual,
+    }
 
 
 # ---------------------------------------------------------------------------
