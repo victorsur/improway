@@ -12,6 +12,14 @@ Cubre:
   8. Inversiones (válidas e inválidas)
   9. Función principal analizar_acorde_gestual — estructura de salida
  10. Casos de error y entradas inválidas
+ 11. Casos de regresión específicos del método
+ 12. Notación de escritura (dos campos)
+ 13. Inversiones — casos adicionales (3ª inversión en cuatríada, formatos de mensaje)
+ 14. Gestos de bemoles — cobertura completa de los 5 bemoles gesturales
+ 15. Observaciones automáticas para los 10 tipos de acorde
+ 16. Gestos de acordes extendidos — dedos mano derecha
+ 17. Estructura de salida completa — campos adicionales
+ 18. Notación de escritura — casos adicionales documentados en logica_metodo_escritura.md
 """
 
 import pytest
@@ -27,6 +35,7 @@ from motor_armonico import (
     BEMOL_A_NATURAL,
     TIPOS_ACORDE,
     TIPOS_TRIADA,
+    OBSERVACIONES_AUTO,
     obtener_notas_acorde,
     nota_es_bemol,
     nota_base_para_gesto,
@@ -653,4 +662,348 @@ class TestNotacionEscritura:
         assert gest["mano_izquierda"]["nota"] == "Do"
         assert gest["mano_derecha"]["nota"] == "Si"
         assert gest["mano_derecha"]["tipo_triada_derecha"] == "menor"
+
+
+# ---------------------------------------------------------------------------
+# 14. Inversiones — casos adicionales (logica_metodo.md sección 7)
+# ---------------------------------------------------------------------------
+
+class TestInversionesExtra:
+    """Casos de inversión documentados en logica_metodo.md sección 7."""
+
+    def test_inversion_valida_tercera_en_cuatriada(self):
+        """Una cuatríada admite 3ª inversión (la 7ª en el bajo)."""
+        r = validar_inversion(["Sol", "Si", "Re", "Fa"], 3)
+        assert r["valida"] is True
+        assert r["datos"]["bajo"] == "Fa"
+        assert "3ª inversión" in r["mensaje"]
+
+    def test_inversion_tercera_via_analizar_gestual(self):
+        """3ª inversión válida para Sol 7 a través de analizar_acorde_gestual."""
+        r = analizar_acorde_gestual("Sol 7", inversion=3)
+        assert r["inversion"]["valida"] is True
+        assert r["inversion"]["datos"]["bajo"] == "Fa"
+
+    def test_inversion_mensaje_formato_valida(self):
+        """Mensaje de inversión válida incluye la nota en el bajo y la lista de notas."""
+        r = validar_inversion(["Do", "Mi", "Sol"], 1)
+        assert r["valida"] is True
+        assert "Mi en el bajo" in r["mensaje"]
+        assert "Mi - Sol - Do" in r["mensaje"]
+
+    def test_inversion_mensaje_formato_invalida_incluye_maximo(self):
+        """Mensaje de inversión inválida incluye el máximo posible y la nota (doc sección 7)."""
+        r = validar_inversion(["Do", "Mi", "Sol"], 3)
+        assert r["valida"] is False
+        assert "Máximo" in r["mensaje"]
+        assert "2ª inversión" in r["mensaje"]
+        assert "Sol" in r["mensaje"]
+
+    def test_inversiones_posibles_sol7_via_analizar(self):
+        """Sol 7 tiene 4 inversiones posibles (0, 1, 2, 3) según la documentación."""
+        r = analizar_acorde_gestual("Sol 7")
+        inv = r["inversiones_posibles"]
+        assert len(inv) == 4
+        assert inv[0]["bajo"] == "Sol"
+        assert inv[1]["bajo"] == "Si"
+        assert inv[2]["bajo"] == "Re"
+        assert inv[3]["bajo"] == "Fa"
+
+    def test_inversiones_posibles_triada_max_3_opciones(self):
+        """Una tríada tiene máximo 2ª inversión — sólo 3 opciones (0, 1, 2)."""
+        r = analizar_acorde_gestual("Do Mayor")
+        inv = r["inversiones_posibles"]  # dict con claves enteras 0..n-1
+        assert len(inv) == 3
+        assert 3 not in inv  # clave 3 ausente: no hay 3ª inversión en una tríada
+
+
+# ---------------------------------------------------------------------------
+# 15. Gestos de bemoles — cobertura completa (logica_metodo.md sección 5)
+# ---------------------------------------------------------------------------
+
+class TestGestosBemolesCompletos:
+    """Verifica todos los bemoles gesturales de la tabla de la sección 5."""
+
+    @pytest.mark.parametrize("bemol,nota_natural,gesto_esp", [
+        ("Reb",  "Re",  "2 dedos (Victoria)"),
+        ("Mib",  "Mi",  "3 dedos (Pulgar, Índice, Medio)"),
+        ("Solb", "Sol", "Mano abierta (5 dedos)"),
+        ("Lab",  "La",  "1 dedo (Pulgar)"),
+        ("Sib",  "Si",  "2 dedos (Pulgar + Índice)"),
+    ])
+    def test_bemol_mano_derecha_activa_agitacion(self, bemol, nota_natural, gesto_esp):
+        """Cada bemol gestural activa agitación lateral en la mano derecha (tríada)."""
+        r = analizar_acorde_gestual(f"{bemol} Mayor")
+        der = r["mano_derecha"]
+        assert der["agitacion_lateral"].startswith("Sí"), (
+            f"{bemol} Mayor: agitación esperada, obtenida '{der['agitacion_lateral']}'"
+        )
+        assert der["nota_natural_gesto"] == nota_natural, (
+            f"{bemol} Mayor: nota natural esperada {nota_natural!r}"
+        )
+        assert der["gesto_dedos"] == gesto_esp, (
+            f"{bemol} Mayor: gesto esperado {gesto_esp!r}"
+        )
+
+    def test_reb_mayor_mano_derecha_completo(self):
+        """Reb Mayor: 2 dedos ↑ en pecho + agitación ↔ (doc sección 2 y sección 5)."""
+        r = analizar_acorde_gestual("Reb Mayor")
+        der = r["mano_derecha"]
+        assert der["nota"] == "Reb"
+        assert der["nota_natural_gesto"] == "Re"
+        assert der["es_bemol"] is True
+        assert der["agitacion_lateral"].startswith("Sí")
+        assert der["orientacion"] == "Arriba (↑)"
+        assert der["altura"] == "Pecho"
+
+    def test_reb_menor_mano_derecha_agitacion_abajo(self):
+        """Reb menor: 2 dedos ↓ en pecho + agitación ↔ (doc sección 2)."""
+        r = analizar_acorde_gestual("Reb menor")
+        der = r["mano_derecha"]
+        assert der["nota"] == "Reb"
+        assert der["agitacion_lateral"].startswith("Sí")
+        assert der["orientacion"] == "Abajo (↓)"
+        assert der["altura"] == "Pecho"
+
+    def test_mano_izquierda_no_tiene_campo_agitacion(self):
+        """La mano izquierda nunca agita — no existe el campo agitacion_lateral (doc sección 2)."""
+        r = analizar_acorde_gestual("Do Mayor")
+        assert "agitacion_lateral" not in r["mano_izquierda"]
+
+    def test_mano_izquierda_bemol_orientacion_abajo(self):
+        """Mano izquierda con bemol → dedos apuntan hacia abajo (doc sección 2 y 5)."""
+        r = analizar_acorde_gestual("Sib Mayor")
+        izq = r["mano_izquierda"]
+        assert izq["orientacion"] == "Abajo (↓)"
+        assert izq["es_bemol"] is True
+        assert izq["nota"] == "Sib"
+        assert izq["nota_natural_gesto"] == "Si"
+
+
+# ---------------------------------------------------------------------------
+# 16. Observaciones automáticas (logica_metodo.md sección 9)
+# ---------------------------------------------------------------------------
+
+class TestObservaciones:
+    """Verifica que todos los tipos de acorde tienen observaciones automáticas."""
+
+    @pytest.mark.parametrize("tipo", list(TIPOS_ACORDE.keys()))
+    def test_todos_los_tipos_tienen_observacion_auto(self, tipo):
+        """Todos los 10 tipos de acorde deben tener una observación automática."""
+        assert tipo in OBSERVACIONES_AUTO, (
+            f"El tipo '{tipo}' no tiene observación automática"
+        )
+        assert len(OBSERVACIONES_AUTO[tipo]) > 0
+
+    def test_observacion_bemol_menciona_nota_y_gesto(self):
+        """Para fundamental bemol, la observación menciona el gesto de agitación."""
+        r = analizar_acorde_gestual("Sib Mayor")
+        obs = r["observaciones"]["automatica"]
+        assert "Sib" in obs
+        assert "Si" in obs
+        assert "agitación lateral" in obs
+
+    def test_observacion_manual_sobreescribe_en_mostrar(self):
+        """La observación manual reemplaza la automática en 'mostrar'."""
+        texto = "Texto personalizado de prueba"
+        r = analizar_acorde_gestual("Do Mayor", observacion_manual=texto)
+        assert r["observaciones"]["mostrar"] == texto
+        assert r["observaciones"]["manual"] == texto
+        assert r["observaciones"]["automatica"] != texto
+
+
+# ---------------------------------------------------------------------------
+# 17. Gestos de acordes extendidos — dedos mano derecha (logica_metodo.md sección 2)
+# ---------------------------------------------------------------------------
+
+class TestGestosExtendidos:
+    """Verifica que la mano derecha en extendidos muestra el gesto correcto."""
+
+    def test_do7_mano_derecha_gesto_es_mi(self):
+        """Do 7: mano derecha muestra Mi (3ª del acorde) → 3 dedos (Pulgar, Índice, Medio)."""
+        r = analizar_acorde_gestual("Do 7")
+        der = r["mano_derecha"]
+        assert der["nota"] == "Mi"
+        assert der["nota_natural_gesto"] == "Mi"
+        assert der["gesto_dedos"] == "3 dedos (Pulgar, Índice, Medio)"
+
+    def test_sol7_mano_derecha_gesto_es_si(self):
+        """Sol 7: mano derecha muestra Si (3ª del acorde) → 2 dedos (Pulgar + Índice)."""
+        r = analizar_acorde_gestual("Sol 7")
+        der = r["mano_derecha"]
+        assert der["nota"] == "Si"
+        assert der["nota_natural_gesto"] == "Si"
+        assert der["gesto_dedos"] == "2 dedos (Pulgar + Índice)"
+
+    def test_do_m7_mano_derecha_gesto_es_mib(self):
+        """Do m7: mano derecha muestra Mib (3ª del acorde) → 3 dedos + agitación."""
+        r = analizar_acorde_gestual("Do m7")
+        der = r["mano_derecha"]
+        assert der["nota"] == "Mib"
+        assert der["nota_natural_gesto"] == "Mi"
+        assert der["es_bemol"] is True
+        assert der["agitacion_lateral"].startswith("Sí")
+
+    def test_re_9_mano_derecha_gesto_es_la(self):
+        """Re 9: mano derecha muestra La (5ª del acorde, notas[2])."""
+        r = analizar_acorde_gestual("Re 9")
+        der = r["mano_derecha"]
+        assert der["nota"] == "La"
+        assert der["nota_natural_gesto"] == "La"
+        assert der["gesto_dedos"] == "1 dedo (Pulgar)"
+
+    def test_triada_mano_derecha_igual_fundamental_todos_tipos(self):
+        """En tríadas, la mano derecha siempre muestra la fundamental (doc sección 2)."""
+        for nombre in ["Re menor", "Mi aumentado", "Sol disminuido", "La Mayor"]:
+            r = analizar_acorde_gestual(nombre)
+            assert r["mano_derecha"]["nota"] == r["mano_izquierda"]["nota"], (
+                f"'{nombre}': mano derecha debe mostrar la fundamental"
+            )
+
+
+# ---------------------------------------------------------------------------
+# 18. Estructura de salida completa — campos adicionales (logica_metodo.md sección 10)
+# ---------------------------------------------------------------------------
+
+class TestEstructuraSalidaCompleta:
+    """Verifica campos de salida documentados en logica_metodo.md sección 10."""
+
+    def test_entrada_original_preservada(self):
+        """El campo 'entrada_original' preserva la entrada tal como se proporcionó."""
+        r = analizar_acorde_gestual("Re menor")
+        assert r["acorde"]["entrada_original"] == "Re menor"
+
+    def test_nombre_latino_formato(self):
+        """El nombre latino sigue el formato 'fundamental tipo'."""
+        r = analizar_acorde_gestual("Sol 7")
+        assert r["acorde"]["nombre_latino"] == "Sol 7"
+
+    def test_anglosajona_cuatriada_maj7(self):
+        """La notación anglosajona es correcta para maj7."""
+        r = analizar_acorde_gestual("Do maj7")
+        assert r["acorde"]["nombre_anglosajona"] == "Cmaj7"
+
+    def test_anglosajona_menor7(self):
+        """La notación anglosajona es correcta para m7."""
+        r = analizar_acorde_gestual("Re m7")
+        assert r["acorde"]["nombre_anglosajona"] == "Dm7"
+
+    def test_notas_num_notas_correcto_para_novena(self):
+        """El campo num_notas refleja correctamente el número de notas del acorde."""
+        r = analizar_acorde_gestual("Do 9")
+        assert r["notas"]["num_notas"] == 5
+
+    def test_notas_anglosajonas_correctas_para_bemoles(self):
+        """Notas anglosajonas de acordes con fundamental bemol son correctas."""
+        r = analizar_acorde_gestual("Reb Mayor")
+        assert r["notas"]["anglosajonas"] == ["Db", "F", "Ab"]
+
+    def test_notas_num_notas_cuatriada(self):
+        """Cuatríadas tienen num_notas == 4."""
+        r = analizar_acorde_gestual("Sol 7")
+        assert r["notas"]["num_notas"] == 4
+
+    def test_notas_num_notas_triada(self):
+        """Tríadas tienen num_notas == 3."""
+        r = analizar_acorde_gestual("Do Mayor")
+        assert r["notas"]["num_notas"] == 3
+
+
+# ---------------------------------------------------------------------------
+# 19. Notación de escritura — casos adicionales (logica_metodo_escritura.md)
+# ---------------------------------------------------------------------------
+
+class TestNotacionEscrituraExtra:
+    """+4/2, ↓3/1, +2b/2b e inversiones escritas (logica_metodo_escritura.md)."""
+
+    def test_ejemplo_mas4_slash2_re_menor_septima_menor(self):
+        """+4/2: Fa mayor sobre Re → Re menor con séptima menor (doc ejemplo)."""
+        r = analizar_notacion_escritura("+4", "2")
+        assert r["error"] is False
+        assert r["acorde"]["nombre_completo"] == "Re menor con séptima menor con bajo en Re"
+
+    def test_ejemplo_disminuido3_slash1_do_con_septima_dominante(self):
+        """↓3/1: Mi disminuido sobre Do → Do con séptima dominante (doc ejemplo)."""
+        r = analizar_notacion_escritura("↓3", "1")
+        assert r["error"] is False
+        assert r["acorde"]["nombre_completo"] == "Do con séptima dominante con bajo en Do"
+
+    def test_ejemplo_mas2b_slash2b_reb_mayor(self):
+        """+2b/2b: Reb mayor sobre Reb → Re bemol mayor (doc ejemplo)."""
+        r = analizar_notacion_escritura("+2b", "2b")
+        assert r["error"] is False
+        assert r["acorde"]["nombre_completo"] == "Re bemol mayor con bajo en Re bemol"
+
+    def test_inversion_primera_escritura_bajo_en_tercera(self):
+        """+1/3: Do mayor con bajo en Mi (primera inversión) — doc ejemplo."""
+        r = analizar_notacion_escritura("+1", "3")
+        assert r["error"] is False
+        assert r["notas"]["bajo"] == "Mi"
+
+    def test_inversion_segunda_escritura_bajo_en_quinta(self):
+        """+1/5: Do mayor con bajo en Sol (segunda inversión) — doc ejemplo."""
+        r = analizar_notacion_escritura("+1", "5")
+        assert r["error"] is False
+        assert r["notas"]["bajo"] == "Sol"
+
+    def test_notacion_campos_superior_bajo_compacta(self):
+        """El output incluye los campos de notación: superior, bajo y compacta."""
+        r = analizar_notacion_escritura("+1", "1")
+        assert r["error"] is False
+        notacion = r["notacion"]
+        assert notacion["superior"] == "+1"
+        assert notacion["bajo"] == "1"
+        assert notacion["compacta"] == "+1/1"
+
+    def test_notacion_compacta_con_bemoles(self):
+        """La notación compacta incluye el bemol en ambas partes."""
+        r = analizar_notacion_escritura("-2b", "2b")
+        assert r["error"] is False
+        assert r["notacion"]["compacta"] == "-2b/2b"
+
+    def test_notas_triada_superior_y_sonido_total(self):
+        """r['notas'] incluye bajo, triada_superior y sonido_total."""
+        r = analizar_notacion_escritura("+4", "2")
+        assert r["error"] is False
+        assert r["notas"]["bajo"] == "Re"
+        assert r["notas"]["triada_superior"] == ["Fa", "La", "Do"]
+        assert r["notas"]["sonido_total"] == ["Re", "Fa", "La", "Do"]
+
+    def test_acorde_simbolo_y_tipo_triada_campos(self):
+        """El output incluye símbolo, tipo_triada_superior, nota_superior y nota_bajo."""
+        r = analizar_notacion_escritura("-3", "1")
+        assert r["error"] is False
+        ac = r["acorde"]
+        assert ac["simbolo_superior"] == "-"
+        assert ac["tipo_triada_superior"] == "menor"
+        assert ac["nota_superior"] == "Mi"
+        assert ac["nota_bajo"] == "Do"
+
+    def test_error_campo_superior_vacio(self):
+        r = parsear_notacion_escritura("", "1")
+        assert r["error"] is True
+
+    def test_error_campo_bajo_vacio(self):
+        r = parsear_notacion_escritura("+1", "")
+        assert r["error"] is True
+
+    def test_error_ambos_campos_vacios(self):
+        r = parsear_notacion_escritura("", "")
+        assert r["error"] is True
+
+    def test_error_bajo_grado_fuera_rango(self):
+        """El grado del bajo debe estar entre 1 y 7; grado 8 es inválido."""
+        r = parsear_notacion_escritura("+1", "8")
+        assert r["error"] is True
+
+    def test_error_bajo_formato_no_numerico(self):
+        """Un bajo con formato no numérico devuelve error."""
+        r = parsear_notacion_escritura("+1", "abc")
+        assert r["error"] is True
+
+    def test_analizar_escritura_propaga_error_parseo(self):
+        """analizar_notacion_escritura propaga el error cuando parsear falla."""
+        r = analizar_notacion_escritura("x1", "1")
+        assert r["error"] is True
+        assert "mensaje" in r
 
